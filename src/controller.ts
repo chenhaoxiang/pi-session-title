@@ -210,7 +210,11 @@ export function registerSessionTitle(pi: ExtensionAPI, store: ConfigStore): void
           else if (input.startsWith("model ")) {
             const model = input.slice(6).trim();
             next.model = model === "current" ? null : model;
-            parseConfig(next);
+            try { parseConfig(next); }
+            catch {
+              notify(ctx, "Use /title-config model current or an exact provider/model ID; settings unchanged.", "warning");
+              return;
+            }
             if (next.model && !resolveTitleModel(ctx, next)) {
               notify(ctx, "That exact provider/model is unavailable or has no configured authentication; settings unchanged.", "warning");
               return;

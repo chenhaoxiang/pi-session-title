@@ -326,6 +326,25 @@ test("config commands persist auto/model while never invoking a model, and curre
   assert.equal(h.calls.length, 0);
 });
 
+test("malformed model arguments preserve healthy settings and an outstanding title request", async () => {
+  const h = harness({ model: "other/org/title-model" });
+  const wait = deferred();
+  h.state.complete = () => wait.promise;
+  await h.emit("session_start");
+  const command = h.command();
+  await h.command("title-config", "model typo");
+  assert.equal(h.state.config.model, "other/org/title-model");
+  assert.equal(h.calls[0]!.options.signal.aborted, false);
+  assert.match(h.notifications.at(-1)!.message, /exact provider\/model/u);
+  wait.resolve(response());
+  await command;
+  assert.equal(h.state.name, "Synthetic title #pi #tests");
+  await h.command();
+  assert.equal(h.calls.length, 2);
+  assert.equal(h.calls[1]!.model.provider, "other");
+  assert.equal(h.calls[1]!.model.id, "org/title-model");
+});
+
 test("disabling auto cancels its outstanding request; the fallback remains", async () => {
   const h = harness({ autoGenerate: true });
   const wait = deferred();
