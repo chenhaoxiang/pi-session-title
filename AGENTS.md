@@ -11,7 +11,7 @@ Run npm run check and inspect npm pack --dry-run --json before release. Publish 
 ## Documentation map
 
 - README.md / README.zh-CN.md: installation, commands, configuration, privacy, and activation boundaries.
-- docs/behavior.md: v0.0.1 behavior, default/opt-in rules, cancellation and verification contract.
+- docs/behavior.md: v0.0.2 behavior, default/opt-in rules, cancellation and verification contract.
 - docs/releasing.md: PR, immutable release assets, verified installation and rollback.
 - docs/maintenance/2026-10-18-release-0.0.1-installed.md: completed v0.0.1 source/release/installation evidence and runtime boundary.
 - src/: extension, controller, text handling and user-level configuration.

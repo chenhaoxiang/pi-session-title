@@ -27,7 +27,7 @@ Pi 运行中的会话不会自动热加载磁盘上的新包。安装或更新�
 安装固定的 GitHub Release：
 
 ```sh
-pi install git:github.com/chenhaoxiang/pi-session-title@v0.0.1
+pi install git:github.com/chenhaoxiang/pi-session-title@v0.0.2
 ```
 
 查看当前选择的包：
@@ -75,7 +75,7 @@ GitHub Release 附可安装压缩包、精确来源清单及 SHA-256 校验。�
 已从 GitHub 安装的包可这样更新：
 
 ```sh
-pi update git:github.com/chenhaoxiang/pi-session-title@v0.0.1
+pi update git:github.com/chenhaoxiang/pi-session-title@v0.0.2
 ```
 
 此命令只校准固定 tag，不会自动升到新版本。升级时请安装未来版本的明确 tag；只有主动跟随开发分支时才用 `@main`。Release 使用不可变版本/tag，不覆盖已经发布的 `v0.0.1` 制品。
