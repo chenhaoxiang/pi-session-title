@@ -12,6 +12,7 @@ import { cleanup, fixture } from "./fixtures.js";
 // End-to-end request adapter check. Every HTTP request is served by a disposable loopback fixture.
 test("real Pi normal turns stay at one request and /title follows the changed current model", async () => {
   const requests: { model: string; messages: unknown[] }[] = [];
+  let emptyTitleResponse = false;
   const server = createServer(async (request, response) => {
     let body = "";
     for await (const chunk of request) body += String(chunk);
@@ -20,7 +21,7 @@ test("real Pi normal turns stay at one request and /title follows the changed cu
     response.writeHead(200, { "Content-Type": "text/event-stream", Connection: "close" });
     const chunk = {
       id: "fixture", object: "chat.completion.chunk", created: 1, model: payload.model,
-      choices: [{ index: 0, delta: { role: "assistant", content: "Native title\npi,test" }, finish_reason: null }],
+      choices: [{ index: 0, delta: { role: "assistant", content: emptyTitleResponse ? " " : "Native title\npi,test" }, finish_reason: null }],
     };
     response.write("data: " + JSON.stringify(chunk) + "\n\n");
     response.write("data: " + JSON.stringify({ ...chunk, choices: [{ index: 0, delta: {}, finish_reason: "stop" }] }) + "\n\n");
@@ -79,6 +80,13 @@ test("real Pi normal turns stay at one request and /title follows the changed cu
       const titlePayload = JSON.stringify(requests[1]!.messages);
       assert.ok(titlePayload.includes("Build a title extension"));
       assert.equal(titlePayload.includes("Native title"), false, "assistant reply is excluded from the title request");
+      emptyTitleResponse = true;
+      await session.prompt("/title");
+      assert.equal(requests.length, 3, "failure is not retried automatically");
+      assert.equal(manager.getSessionName(), "Native title #pi #test", "failed refresh preserves the name");
+      const diagnostic = manager.getBranch().find((entry) => entry.type === "custom" && entry.customType === "session-title-failure");
+      assert.ok(diagnostic && diagnostic.type === "custom");
+      assert.deepEqual(diagnostic.data, { schemaVersion: 1, reason: "empty-output", automatic: false });
     } finally { session.dispose(); }
   } finally {
     if (previous === undefined) delete process.env.PI_CODING_AGENT_DIR;

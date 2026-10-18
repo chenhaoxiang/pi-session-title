@@ -24,7 +24,7 @@ This is an original standalone project. Use SemVer, a PR-managed `main`, regular
 
 ## Installation and rollback
 
-Use `pi install git:github.com/chenhaoxiang/pi-session-title@v0.0.1`, or extract a verified Release tarball to a permanent versioned user-owned directory and run `pi install /absolute/path/to/package`. A local path is not copied by Pi: keep that directory. Never install a temporary worktree/release directory as the permanent source.
+Use `pi install git:github.com/chenhaoxiang/pi-session-title@v0.0.2`, or extract a verified Release tarball to a permanent versioned user-owned directory and run `pi install /absolute/path/to/package`. A local path is not copied by Pi: keep that directory. Never install a temporary worktree/release directory as the permanent source.
 
 Before migrating a manual `~/.pi/agent/extensions/session-title.ts`, back it up with the pre-switch settings in a private user-owned location and verify byte hashes. Move it outside extension discovery; a different filename inside a discovered directory may still load. Enable only the package. Verify installed source bytes, exactly one title command and no unrelated settings changes. Leave `autoGenerate: false` and `model: null` unless the user requests otherwise.
 

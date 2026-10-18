@@ -1,6 +1,6 @@
 {
   "name": "pi-session-title",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
   "description": "On-demand Pi session titles with the current model, zero-request fallback names, and opt-in automatic generation.",
   "license": "MIT",

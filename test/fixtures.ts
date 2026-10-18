@@ -35,6 +35,7 @@ export function harness(initial: Partial<TitleConfig> = {}) {
   const commands = new Map<string, Command>();
   const notifications: { message: string; type: string }[] = [];
   const statuses = new Map<string, string | undefined>();
+  const diagnostics: { type: string; data: unknown }[] = [];
   const calls: { model: Model; context: any; options: any }[] = [];
   const state = {
     name: undefined as string | undefined,
@@ -58,6 +59,7 @@ export function harness(initial: Partial<TitleConfig> = {}) {
     on(name: string, handler: Handler) { events.set(name, [...(events.get(name) ?? []), handler]); return () => {}; },
     registerCommand(name: string, command: Command) { commands.set(name, command); },
     getSessionName() { return state.name; },
+    appendEntry(type: string, data: unknown) { diagnostics.push({ type, data }); },
     setSessionName(name: string) {
       state.name = name || undefined;
       state.branch.push({ type: "session_info", id: "name-" + state.branch.length, name: state.name });
@@ -100,5 +102,5 @@ export function harness(initial: Partial<TitleConfig> = {}) {
     if (!selected) throw new Error("unknown test command");
     await selected.handler(args, ctx as ExtensionCommandContext);
   };
-  return { state, emit, pi, ctx, commands, events, calls, notifications, statuses, command };
+  return { state, emit, pi, ctx, commands, events, calls, notifications, statuses, diagnostics, command };
 }

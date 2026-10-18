@@ -27,7 +27,7 @@ A running Pi session does not hot-load a changed package. Restart Pi or use `/re
 Install the immutable GitHub release:
 
 ```sh
-pi install git:github.com/chenhaoxiang/pi-session-title@v0.0.1
+pi install git:github.com/chenhaoxiang/pi-session-title@v0.0.2
 ```
 
 Inspect the selected package:
@@ -75,10 +75,10 @@ GitHub Releases include an installable tarball, exact-source manifest and SHA-25
 To update a package already installed from GitHub:
 
 ```sh
-pi update git:github.com/chenhaoxiang/pi-session-title@v0.0.1
+pi update git:github.com/chenhaoxiang/pi-session-title@v0.0.2
 ```
 
-This reconciles the pinned tag; it does not advance it. To upgrade to a future version, install its explicit new tag. Use `@main` only if you deliberately want a moving development branch. Do not overwrite `v0.0.1` assets.
+This reconciles the pinned tag; it does not advance it. To upgrade to a future version, install its explicit new tag. Use `@main` only if you deliberately want a moving development branch. Do not overwrite `v0.0.2` assets.
 
 ## Development
 
