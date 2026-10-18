@@ -62,6 +62,10 @@ for (const scenario of ["missing-selected", "no-auth", "no-current"] as const) {
     assert.equal(h.calls.length, 0);
     assert.equal(h.state.name, "Fix the title e");
     assert.equal(h.notifications.at(-1)!.type, "warning");
+    assert.match(h.notifications.at(-1)!.message, /model-unavailable/u);
+    assert.deepEqual(h.diagnostics, [{ type: "session-title-failure", data: {
+      schemaVersion: 1, reason: "model-unavailable", automatic: false,
+    } }]);
   });
 }
 
@@ -78,6 +82,11 @@ for (const scenario of ["throw", "error-response", "empty", "aborted-response"] 
     assert.equal(h.state.name, "Fix the title e");
     assert.equal(h.calls.length, 1);
     assert.ok(h.notifications.every(({ message }) => !/synthetic-secret|private.invalid|untrusted/u.test(message)));
+    const expectedReason = scenario === "empty" ? "empty-output" : "provider-error";
+    assert.match(h.notifications.at(-1)!.message, new RegExp(expectedReason));
+    assert.deepEqual(h.diagnostics, [{ type: "session-title-failure", data: {
+      schemaVersion: 1, reason: expectedReason, automatic: false,
+    } }]);
     await h.emit("turn_end");
     assert.equal(h.calls.length, 1);
   });
@@ -142,6 +151,9 @@ test("automatic failure retains fallback and does not retry on later turns/reloa
   await h.emit("turn_end");
   await flush();
   assert.equal(h.state.name, "Fix the title e");
+  assert.deepEqual(h.diagnostics, [{ type: "session-title-failure", data: {
+    schemaVersion: 1, reason: "provider-error", automatic: true,
+  } }]);
   await h.emit("turn_end");
   await h.emit("session_start", { reason: "reload" });
   await h.emit("turn_end");
@@ -185,6 +197,7 @@ for (const command of ["/name", "/title"] as const) {
     wait.resolve(response("Stale title\nstale"));
     await flush();
     assert.equal(h.state.name, "User wins");
+    assert.deepEqual(h.diagnostics, [], "cancelled requests are not failures");
   });
 }
 
@@ -203,6 +216,7 @@ for (const event of ["session_before_switch", "session_before_fork", "session_be
     await command;
     assert.equal(h.calls[0]!.options.signal.aborted, true);
     assert.equal(h.state.name, "Other session");
+    assert.deepEqual(h.diagnostics, [], "retired sessions must not receive diagnostics");
   });
 }
 
@@ -234,6 +248,7 @@ test("parent cancellation never aborts the main task or commits a late title", a
   await flush();
   assert.equal(h.calls[0]!.options.signal.aborted, true);
   assert.equal(h.state.name, "Fix the title e");
+  assert.deepEqual(h.diagnostics, [], "parent cancellation is not a title failure");
 });
 
 test("optional title UI failures do not reject normal turn processing", async () => {
@@ -281,11 +296,25 @@ test("wall-clock timeout releases /title even if a provider never settles or hon
   assert.equal(h.calls[0]!.options.signal.aborted, true);
   assert.equal(h.state.name, "Fix the title e");
   assert.match(h.notifications.at(-1)!.message, /timed out/u);
+  assert.deepEqual(h.diagnostics, [{ type: "session-title-failure", data: {
+    schemaVersion: 1, reason: "timeout", automatic: false,
+  } }]);
   // The timed-out promise can resolve late, but it cannot overwrite metadata.
   h.pi.setSessionName("After timeout");
   wait.resolve(response());
   await flush();
   assert.equal(h.state.name, "After timeout");
+});
+
+test("diagnostic write failure cannot reject a title command or expose raw errors", async () => {
+  const h = harness();
+  h.pi.appendEntry = () => { throw new Error("private persistence error"); };
+  h.state.complete = async () => { throw new Error("private provider error"); };
+  await h.emit("session_start");
+  await h.command();
+  assert.equal(h.state.name, "Fix the title e");
+  assert.match(h.notifications.at(-1)!.message, /provider-error/u);
+  assert.ok(h.notifications.every(({ message }) => !message.includes("private")));
 });
 
 test("title payload contains only bounded user text, never host prompts/assistant/tools/images", async () => {
@@ -366,6 +395,7 @@ test("unreadable config disables requests but preserves fallback and can recover
   await h.command();
   assert.equal(h.calls.length, 0);
   assert.equal(h.state.name, "Fix the title e");
+  assert.match(h.notifications.at(-1)!.message, /configuration/u);
   h.state.readError = false;
   await h.command("title-config", "reload");
   await h.command();
@@ -382,4 +412,5 @@ test("failed config writes preserve disk settings, report a generic warning and 
   await h.command();
   assert.equal(h.calls.length, 0);
   assert.ok(h.notifications.every(({ message }) => !message.includes("synthetic private")));
+  assert.match(h.notifications.at(-1)!.message, /configuration/u);
 });

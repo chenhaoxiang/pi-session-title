@@ -12,6 +12,17 @@ const INSTRUCTIONS = [
 ].join("\n");
 
 type Request = { controller: AbortController; sessionId: string; expectedName: string | undefined; nameRevision: string | undefined };
+type TitleFailureReason = "configuration" | "model-unavailable" | "provider-error" | "empty-output";
+
+class TitleFailure extends Error {
+  readonly reason: TitleFailureReason;
+
+  constructor(reason: TitleFailureReason) {
+    super(reason);
+    this.name = "TitleFailure";
+    this.reason = reason;
+  }
+}
 
 function nameRevision(ctx: ExtensionContext): string | undefined {
   const entries = ctx.sessionManager.getBranch();
@@ -80,9 +91,9 @@ export function registerSessionTitle(pi: ExtensionAPI, store: ConfigStore): void
     let removeAbort = () => {};
     let timedOut = false;
     try {
-      if (!configHealthy) throw new Error("configuration");
+      if (!configHealthy) throw new TitleFailure("configuration");
       const model = resolveTitleModel(ctx, config);
-      if (!model) throw new Error("model unavailable");
+      if (!model) throw new TitleFailure("model-unavailable");
       if (signal.aborted) return;
       if (!automatic) notify(ctx, "Generating session title…");
       const aborted = new Promise<never>((_resolve, reject) => {
@@ -109,17 +120,22 @@ export function registerSessionTitle(pi: ExtensionAPI, store: ConfigStore): void
         aborted,
       ]);
       if (!matches(ctx, request) || signal.aborted) return;
-      if (response.stopReason === "error" || response.stopReason === "aborted") throw new Error("provider failure");
+      if (response.stopReason === "error" || response.stopReason === "aborted") throw new TitleFailure("provider-error");
       const result = parseModelOutput(response.content.filter((block) => block.type === "text").map((block) => block.text).join("\n"));
-      if (!result) throw new Error("empty output");
+      if (!result) throw new TitleFailure("empty-output");
       active = undefined;
       const name = formatName(result);
       setName(ctx, name);
       notify(ctx, "Session title: " + name);
-    } catch {
-      // Provider/auth errors may contain secrets. Do not expose raw error text.
+    } catch (error) {
+      // Provider/auth errors may contain secrets. Do not expose raw error text;
+      // expose only a stable local failure class for diagnosis.
       if (!matches(ctx, request) || (signal.aborted && !timedOut)) return;
-      notify(ctx, (timedOut ? "Title generation timed out" : "Title generation unavailable")
+      const reason = timedOut ? "timeout" : error instanceof TitleFailure ? error.reason : "provider-error";
+      try {
+        pi.appendEntry("session-title-failure", { schemaVersion: 1, reason, automatic });
+      } catch { /* Diagnostic persistence must not fail the optional title task. */ }
+      notify(ctx, (timedOut ? "Title generation timed out" : `Title generation unavailable (${reason})`)
         + "; kept the existing/local fallback title. Use /title to retry.", "warning");
     } finally {
       clearTimeout(timer);
