@@ -6,7 +6,7 @@ A small Pi extension that gives sessions useful names without silently choosing 
 
 ## Behavior
 
-- **Default model:** `/title` uses the model active in the current session at the moment the command runs.
+- **Default model and thinking:** `/title` uses the current session model and thinking level at request time. The host adapter handles model-specific thinking support; the extension never changes the main session settings.
 - **No hidden provider:** configure an exact `provider/model` only when you intentionally want another model. If it is unavailable or unauthenticated, the extension does not silently switch providers; it keeps or creates a local fallback title.
 - **Zero default model calls:** the default is `autoGenerate: false`. A local fallback title is cheap and offline; no title-model request is made unless you run `/title`.
 - **Opt-in automatic generation (TUI only):** set `autoGenerate: true` to allow one best-effort title request after the first completed turn of an unnamed session. The request is fire-and-forget and cannot delay or fail the main task. The local fallback is installed first and a successful result may replace it.
@@ -27,7 +27,7 @@ A running Pi session does not hot-load a changed package. Restart Pi or use `/re
 Install the immutable GitHub release:
 
 ```sh
-pi install git:github.com/chenhaoxiang/pi-session-title@v0.0.2
+pi install git:github.com/chenhaoxiang/pi-session-title@v0.0.3
 ```
 
 Inspect the selected package:
@@ -75,10 +75,10 @@ GitHub Releases include an installable tarball, exact-source manifest and SHA-25
 To update a package already installed from GitHub:
 
 ```sh
-pi update git:github.com/chenhaoxiang/pi-session-title@v0.0.2
+pi update git:github.com/chenhaoxiang/pi-session-title@v0.0.3
 ```
 
-This reconciles the pinned tag; it does not advance it. To upgrade to a future version, install its explicit new tag. Use `@main` only if you deliberately want a moving development branch. Do not overwrite `v0.0.2` assets.
+This reconciles the pinned tag; it does not advance it. To upgrade to a future version, install its explicit new tag. Use `@main` only if you deliberately want a moving development branch. Do not overwrite published tags or assets.
 
 ## Development
 

@@ -4,8 +4,9 @@ project: pi-session-title
 status: active
 truth_mode: maintained
 created: 2026-10-18
-verified: 2026-10-18
+verified: 2026-11-11
 verified_by: manual
+verification_scope: Request-time thinking fix and offline regressions, including Pi 1.5.2-fork.2; other behavior preserved
 ---
 
 # Behavior contract
@@ -20,7 +21,7 @@ The title model is resolved at request time:
 2. `model: "provider/model"` → that exact registered chat model, only with configured authentication. Model IDs may contain slashes; the first slash separates provider from ID.
 3. Missing or unauthenticated models → no model call and local fallback, not another provider.
 
-The extension never changes Pi's active model, default model, thinking level, or credentials. It uses the registry's provider-neutral `streamSimple` and request-time authentication. It does not force a title-specific thinking level. Automatic model requests run only in TUI mode, not RPC/JSON/print; explicitly dispatched `/title` commands are supported by command-capable hosts.
+The extension never changes Pi's active model, default model, thinking level, or credentials. It uses the registry's provider-neutral `streamSimple` and request-time authentication. Each request reads the current `pi.getThinkingLevel()` and passes it as `reasoning` (`off` uses the SDK's `undefined` representation); it does not force a title-specific level or silently disable thinking. The host adapter handles support for the selected model, including an explicitly configured title model. If the user's selected level is rejected by the provider, normal failure/fallback applies without retries or automatic level changes. Automatic model requests run only in TUI mode, not RPC/JSON/print; explicitly dispatched `/title` commands are supported by command-capable hosts.
 
 ## Input and output
 
@@ -44,4 +45,19 @@ Commands persist through private temporary files and atomic rename. Concurrent P
 
 ## Verification
 
-Run `npm run check` and package inspection. Regressions exercise zero-call defaults, request-time current-model selection, explicit model/auth failure without alternate calls, fallback on failure/timeout, non-blocking automatic work, duplicate/rename/session cancellation, bounded user-only input, configuration validation/persistence and real Pi loading with synthetic fixtures. Tests must not use real credentials or providers.
+Run `npm run check` and package inspection. Regressions exercise zero-call defaults, request-time current-model/thinking selection, a loopback reasoning-only Responses endpoint that rejects implicit `none`, explicit model/auth failure without alternate calls, fallback on failure/timeout, non-blocking automatic work, duplicate/rename/session cancellation, bounded user-only input, configuration validation/persistence and real Pi loading with synthetic fixtures. Tests must not use real credentials or providers.
+
+### Reasoning-level fix in v0.0.3
+
+In v0.0.2, `/title` omitted `reasoning` even when the main session had thinking enabled. Pi's Responses adapter consequently sent `reasoning.effort=none`. A reasoning-only model rejected this with HTTP 400 `unsupported_value`, exposed only as the extension's safe `provider-error` class. Explicitly using the session's current level avoids this unintentional opt-out without choosing another model or changing the main session.
+
+Two separately authorized manual diagnostic requests, using synthetic input and no conversation excerpts, isolated the cause on Pi 1.3.0-fork.1: the original options returned HTTP 400; changing only the reasoning option to the current `max` returned HTTP 200 with non-empty text in about 6.7 seconds. No raw provider error or credential was retained. These were bounded manual diagnostics, not automated tests.
+
+The fix was first prepared as a local candidate on 2026-10-21. Offline verification covers:
+
+- The three new enabled-thinking regressions fail against the original controller for the missing level / retained-name symptom, then pass after the fix. A fourth regression preserves explicit `off` using the SDK's `undefined` option.
+- `npm run check`: 68 tests pass, plus typecheck and build. The Responses regression uses a synthetic loopback server that independently rejects `none` and verifies actual `/title` renaming after changes to `max` and `low`.
+- The same Responses regression passes with the maintained Pi 1.3.0-fork.1 and 1.5.2-fork.2 SDKs, using only disposable agent directories and synthetic authentication.
+- `npm pack --dry-run --json`: the expected source/docs files only; no test fixtures, local configuration or credentials.
+
+The fix is included in the v0.0.3 source. Release assets and their manifest bind the published package to the exact merged source commit; release publication and installation must be verified separately. Install the new explicit tag rather than reconciling v0.0.2, then restart Pi or use `/reload`: changed disk files do not hot-load an active session. Real user-conversation `/title` behavior in an existing session is not covered by the offline tests. The 15-second timeout, 512-token cap, zero retries and zero-default-request policy are unchanged.
