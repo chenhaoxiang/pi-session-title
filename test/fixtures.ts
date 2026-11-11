@@ -41,6 +41,7 @@ export function harness(initial: Partial<TitleConfig> = {}) {
     name: undefined as string | undefined,
     sessionId: "session-1",
     currentModel: model() as Model | undefined,
+    thinkingLevel: "off" as ReturnType<ExtensionAPI["getThinkingLevel"]>,
     branch: [{ type: "message", message: { role: "user", content: "Fix the title extension", timestamp: 0 } }] as any[],
     available: [model(), model("other", "org/title-model")],
     configuredAuth: true,
@@ -59,6 +60,7 @@ export function harness(initial: Partial<TitleConfig> = {}) {
     on(name: string, handler: Handler) { events.set(name, [...(events.get(name) ?? []), handler]); return () => {}; },
     registerCommand(name: string, command: Command) { commands.set(name, command); },
     getSessionName() { return state.name; },
+    getThinkingLevel() { return state.thinkingLevel; },
     appendEntry(type: string, data: unknown) { diagnostics.push({ type, data }); },
     setSessionName(name: string) {
       state.name = name || undefined;

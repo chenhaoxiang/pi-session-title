@@ -35,6 +35,45 @@ test("/title resolves the actual current model at invocation, including later mo
   assert.notEqual(h.calls[0]!.options.sessionId, h.calls[1]!.options.sessionId);
 });
 
+test("/title resolves the current thinking level at invocation without changing session settings", async () => {
+  const h = harness();
+  h.state.thinkingLevel = "high";
+  await h.emit("session_start");
+  const current = h.state.currentModel;
+  h.state.thinkingLevel = "max";
+  await h.command();
+  assert.equal(h.calls[0]!.options.reasoning, "max");
+  assert.equal(h.state.thinkingLevel, "max");
+  h.state.thinkingLevel = "low";
+  await h.command();
+  assert.equal(h.calls[1]!.options.reasoning, "low");
+  assert.equal(h.state.thinkingLevel, "low");
+  assert.equal(h.state.currentModel, current);
+});
+
+test("an explicit off thinking level is preserved using the SDK's undefined reasoning value", async () => {
+  const h = harness();
+  h.state.thinkingLevel = "off";
+  await h.emit("session_start");
+  await h.command();
+  assert.equal(h.calls.length, 1);
+  assert.equal(h.calls[0]!.options.reasoning, undefined);
+  assert.equal(h.state.thinkingLevel, "off");
+});
+
+test("automatic titles pass the session thinking level even with an explicit title model", async () => {
+  const h = harness({ autoGenerate: true, model: "other/org/title-model" });
+  h.state.thinkingLevel = "high";
+  await h.emit("session_start");
+  await h.emit("turn_end");
+  await flush();
+  assert.equal(h.calls.length, 1);
+  assert.equal(h.calls[0]!.model.provider, "other");
+  assert.equal(h.calls[0]!.options.reasoning, "high");
+  assert.equal(h.state.thinkingLevel, "high");
+  assert.equal(h.state.currentModel?.provider, "synthetic");
+});
+
 test("/title may explicitly regenerate an existing name", async () => {
   const h = harness();
   h.state.name = "Old topic";

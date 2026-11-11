@@ -94,6 +94,7 @@ export function registerSessionTitle(pi: ExtensionAPI, store: ConfigStore): void
       if (!configHealthy) throw new TitleFailure("configuration");
       const model = resolveTitleModel(ctx, config);
       if (!model) throw new TitleFailure("model-unavailable");
+      const thinkingLevel = pi.getThinkingLevel();
       if (signal.aborted) return;
       if (!automatic) notify(ctx, "Generating session title…");
       const aborted = new Promise<never>((_resolve, reject) => {
@@ -113,6 +114,8 @@ export function registerSessionTitle(pi: ExtensionAPI, store: ConfigStore): void
           signal,
           timeoutMs: config.timeoutMs,
           maxRetries: 0,
+          // An omitted level becomes "off" in streamSimple; reasoning-only models can reject it.
+          reasoning: thinkingLevel === "off" ? undefined : thinkingLevel,
           maxTokens: 512,
           cacheRetention: "none",
           sessionId: randomUUID(),

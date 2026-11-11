@@ -6,7 +6,7 @@
 
 ## 行为约定
 
-- **默认模型：** 执行 `/title` 时，使用当前会话正在使用的模型。
+- **默认模型和思考档位：** 标题请求使用当前会话在请求发起时的模型和思考档位，由宿主适配模型支持的档位；不会修改主会话设置。
 - **不隐藏切换 Provider：** 只有配置了精确的 `provider/model`，才会使用其他模型；如果该模型不可用或没有认证，不会静默切换到其他 Provider，而是保留或生成本地 fallback 标题。
 - **默认不调用标题模型：** 默认 `autoGenerate: false`。本地 fallback 标题只根据首条用户消息生成，不需要网络，也不会调用标题模型；只有执行 `/title` 才会发起模型调用。
 - **自动生成必须显式开启（仅 TUI）：** 设置 `autoGenerate: true` 后，未命名会话首个回合结束时允许进行一次尽力而为的标题请求。请求不会被生命周期处理器等待，不会拖慢或阻断主任务；本地 fallback 会先设置，模型成功后才替换。
@@ -27,7 +27,7 @@ Pi 运行中的会话不会自动热加载磁盘上的新包。安装或更新�
 安装固定的 GitHub Release：
 
 ```sh
-pi install git:github.com/chenhaoxiang/pi-session-title@v0.0.2
+pi install git:github.com/chenhaoxiang/pi-session-title@v0.0.3
 ```
 
 查看当前选择的包：
@@ -75,10 +75,10 @@ GitHub Release 附可安装压缩包、精确来源清单及 SHA-256 校验。�
 已从 GitHub 安装的包可这样更新：
 
 ```sh
-pi update git:github.com/chenhaoxiang/pi-session-title@v0.0.2
+pi update git:github.com/chenhaoxiang/pi-session-title@v0.0.3
 ```
 
-此命令只校准固定 tag，不会自动升到新版本。升级时请安装未来版本的明确 tag；只有主动跟随开发分支时才用 `@main`。Release 使用不可变版本/tag，不覆盖已经发布的 `v0.0.1` 制品。
+此命令只校准固定 tag，不会自动升到新版本。升级时请安装未来版本的明确 tag；只有主动跟随开发分支时才用 `@main`。Release 使用不可变版本/tag，不覆盖已经发布的 tag 或制品。
 
 ## 开发与验证
 
